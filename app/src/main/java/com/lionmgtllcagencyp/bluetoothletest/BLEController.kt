@@ -63,48 +63,6 @@ class BLEController private constructor(ctx: Context) {
         fireDeviceFound(device)
     }
 
-    fun connectToDevice(address: String) {
-        device = devices[address]
-        scanner!!.stopScan(bleCallback)
-        Log.e("[BLE]", "connect to device " + device!!.address)
-        bluetoothGatt = device!!.connectGatt(null, false, bleConnectCallback)
-    }
-
-    private val bleConnectCallback: BluetoothGattCallback = object : BluetoothGattCallback() {
-        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.e("[BLE]", "start service discovery " + bluetoothGatt!!.discoverServices())
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                btGattChar = null
-                Log.e("[BLE]", "DISCONNECTED with status $status")
-                fireDisconnected()
-            } else {
-                Log.e("[BLE]", "unknown state $newState and status $status")
-            }
-        }
-
-        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            if (null == btGattChar) {
-                for (service in gatt.services) {
-                    if (service.uuid.toString().toUpperCase().startsWith("4638")) {
-                        val gattCharacteristics = service.characteristics
-                        for (bgc in gattCharacteristics) {
-                            if (bgc.uuid.toString().toUpperCase().startsWith("4638")) {
-                                val chprop = bgc.properties
-                                if (chprop and BluetoothGattCharacteristic.PROPERTY_WRITE or (chprop and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
-                                    btGattChar = bgc
-                                    Log.e("[BLE]", "CONNECTED and ready to send")
-                                    fireConnected()
-                                }else{
-                                    Log.e("DOES NOT COMPLY WITH CONECTION","NOT")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     private fun fireDisconnected() {
         for (l in listeners) l.BLEControllerDisconnected()
